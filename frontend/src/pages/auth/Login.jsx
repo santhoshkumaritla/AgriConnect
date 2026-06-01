@@ -23,7 +23,11 @@ const Login = () => {
       const data = await login(values);
       navigate(getDashboardPath(normalizeRole(data.user.role)));
     } catch (err) {
-      setError(err?.response?.data?.message || 'Unable to login');
+      if (!err?.response) {
+        setError('Cannot reach server. Wait a moment and try again (Render free tier may be starting).');
+      } else {
+        setError(err?.response?.data?.message || 'Unable to login');
+      }
     }
   };
 

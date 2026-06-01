@@ -27,7 +27,15 @@ const Register = () => {
       const data = await registerUser(values);
       navigate(getDashboardPath(normalizeRole(data.user.role)));
     } catch (err) {
-      setError(err?.response?.data?.message || 'Unable to register');
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.message;
+      if (status === 409) {
+        setError(msg || 'This email is already registered. Please log in instead.');
+      } else if (!err?.response) {
+        setError('Cannot reach server. Check your connection or try again in a minute (Render may be waking up).');
+      } else {
+        setError(msg || 'Unable to register');
+      }
     }
   };
 
