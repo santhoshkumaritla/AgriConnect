@@ -1,0 +1,21 @@
+# Deploy backend API (Express + Socket.IO) on Render — free tier works for demos.
+# Frontend: deploy separately on Vercel (see README).
+services:
+  - type: web
+    name: agriconnect-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: ACCESS_TOKEN_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: CLIENT_ORIGIN
+        sync: false
