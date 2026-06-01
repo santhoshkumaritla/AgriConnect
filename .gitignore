@@ -1,18 +1,22 @@
 # Dependencies
 node_modules/
 
-# Environment & secrets
+# Environment & secrets — NEVER commit real .env files
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 backend/.env
+backend/.env.local
+backend/.env.production
 frontend/.env
+frontend/.env.local
+frontend/.env.production
 
 # Build output
 frontend/dist/
 dist/
 
-# Uploads (use cloud storage in production)
+# Uploads
 backend/uploads/*
 !backend/uploads/.gitkeep
 
@@ -26,6 +30,5 @@ Thumbs.db
 .idea/
 *.swp
 
-# Coverage / cache
 coverage/
 .cache/

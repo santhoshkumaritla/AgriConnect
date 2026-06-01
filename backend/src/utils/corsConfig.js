@@ -21,10 +21,7 @@ const parseAllowedOrigins = () => {
     .map(normalizeOrigin)
     .filter(Boolean);
 
-  // Production fallback for Netlify deploys
-  const defaults = ['https://agriconnectaii.netlify.app'];
-
-  return [...new Set([...fromEnv, ...extras, ...defaults])];
+  return [...new Set([...fromEnv, ...extras])];
 };
 
 const allowedOrigins = parseAllowedOrigins();
