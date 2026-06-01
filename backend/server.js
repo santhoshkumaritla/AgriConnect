@@ -7,11 +7,13 @@ const app = require('./src/app');
 const connectDb = require('./src/config/db');
 const { initSockets } = require('./src/sockets');
 const { logCorsConfig } = require('./src/utils/corsConfig');
+const { verifyEmailConnection } = require('./src/services/emailService');
 
 const PORT = process.env.PORT || 5000;
 
 const start = async () => {
   logCorsConfig();
+  await verifyEmailConnection();
   await connectDb();
   const server = http.createServer(app);
   initSockets(server);

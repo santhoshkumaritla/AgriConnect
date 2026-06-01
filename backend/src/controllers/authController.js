@@ -79,15 +79,17 @@ const register = async (req, res, next) => {
       emailVerificationToken,
     });
 
-    try {
-      await sendEmail({
-        to: normalizedEmail,
-        subject: 'Verify your AgriConnect AI account',
-        html: `<p>Your verification token: <strong>${emailVerificationToken}</strong></p>`,
-      });
-    } catch (emailErr) {
-      console.error('Verification email failed (registration still succeeded):', emailErr.message);
-    }
+    await sendEmail({
+      to: normalizedEmail,
+      subject: 'Verify your AgriConnect AI account',
+      text: `Your verification code: ${emailVerificationToken}`,
+      html: `
+        <h2>Welcome to AgriConnect AI</h2>
+        <p>Your email verification code:</p>
+        <p style="font-size:24px;font-weight:bold;letter-spacing:2px">${emailVerificationToken}</p>
+        <p>Enter this on the verify email page in the app.</p>
+      `,
+    });
 
     return issueAuthResponse(user, res, 201);
   } catch (error) {
@@ -194,7 +196,8 @@ const forgotPassword = async (req, res, next) => {
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
     }
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.json({ message: 'If the email exists, a reset token has been sent' });
     }
@@ -203,13 +206,28 @@ const forgotPassword = async (req, res, next) => {
     user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
     await user.save();
 
-    await sendEmail({
-      to: email,
+    const mailResult = await sendEmail({
+      to: normalizedEmail,
       subject: 'Reset your AgriConnect AI password',
-      html: `<p>Your reset token: <strong>${resetToken}</strong></p>`,
+      text: `Your password reset code: ${resetToken}`,
+      html: `
+        <h2>Password reset</h2>
+        <p>Your reset code (valid 1 hour):</p>
+        <p style="font-size:24px;font-weight:bold;letter-spacing:2px">${resetToken}</p>
+      `,
     });
 
-    return res.json({ message: 'Password reset token sent' });
+    if (!mailResult.ok && !mailResult.skipped) {
+      return res.status(503).json({
+        message: 'Could not send email. Check SMTP settings on the server or try again later.',
+      });
+    }
+
+    return res.json({
+      message: mailResult.skipped
+        ? 'Reset code generated. Email is not configured on server — contact support.'
+        : 'Password reset code sent to your email',
+    });
   } catch (error) {
     return next(error);
   }
