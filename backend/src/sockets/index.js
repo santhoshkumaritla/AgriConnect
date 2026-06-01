@@ -3,10 +3,14 @@ const { setNotificationEmitter } = require('../services/notifyService');
 
 let io;
 
+const socketCorsOrigins = process.env.CLIENT_ORIGIN
+  ? process.env.CLIENT_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+  : '*';
+
 const initSockets = (server) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_ORIGIN || '*',
+      origin: socketCorsOrigins,
       credentials: true,
     },
   });

@@ -1,0 +1,15 @@
+# Netlify — AgriConnect frontend (Vite + React Router)
+# Site settings: connect repo https://github.com/santhoshkumaritla/AgriConnect
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA: all routes → index.html (same as vercel.json)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

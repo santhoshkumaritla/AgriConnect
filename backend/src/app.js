@@ -21,9 +21,13 @@ const { notFound, errorHandler } = require('./middleware/error');
 
 const app = express();
 
+const corsOrigins = process.env.CLIENT_ORIGIN
+  ? process.env.CLIENT_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+  : '*';
+
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || '*',
+    origin: corsOrigins,
     credentials: true,
   })
 );

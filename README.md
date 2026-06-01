@@ -120,16 +120,16 @@ App: `http://localhost:5173`
 5. FastAPI + MobileNetV2 for plant disease detection
 6. Mobile app (React Native)
 
-## Deploy (Git + Vercel + backend host)
+## Deploy (Git + Netlify + Render)
 
 This app has two parts:
 
 | Part | Host | Why |
 |------|------|-----|
-| **Frontend** (`frontend/`) | [Vercel](https://vercel.com) | Static Vite build + React Router |
-| **Backend** (`backend/`) | [Render](https://render.com) or [Railway](https://railway.app) | Express + Socket.IO + file uploads need a Node server |
+| **Frontend** (`frontend/`) | [Netlify](https://www.netlify.com) or [Vercel](https://vercel.com) | Static Vite build + React Router |
+| **Backend** (`backend/`) | [Render](https://render.com) | Express + Socket.IO + file uploads |
 
-Vercel alone cannot run this full backend (long-lived WebSockets + Multer uploads).
+Example production backend: `https://agriconnect-backend-uutq.onrender.com`
 
 ### 1. Push to GitHub
 
@@ -159,23 +159,43 @@ git push -u origin main
    | `MONGODB_URI` | Your Atlas connection string |
    | `ACCESS_TOKEN_SECRET` | Long random string |
    | `REFRESH_TOKEN_SECRET` | Long random string |
-   | `CLIENT_ORIGIN` | `https://your-app.vercel.app` |
+   | `CLIENT_ORIGIN` | `http://localhost:5173,https://YOUR-NETLIFY-SITE.netlify.app` |
 
-4. Deploy and copy the service URL, e.g. `https://agriconnect-api.onrender.com`.
+4. Deploy and copy the service URL, e.g. `https://agriconnect-backend-uutq.onrender.com`.
 
-### 3. Deploy frontend (Vercel)
+### 3. Deploy frontend (Netlify)
 
-1. [vercel.com](https://vercel.com) → **Add New** → **Project** → import the same GitHub repo.
-2. **Root Directory**: `frontend`
-3. **Framework Preset**: Vite (auto-detected)
-4. **Environment variables**:
+1. Push code to [GitHub](https://github.com/santhoshkumaritla/AgriConnect) (see step 1).
+2. [app.netlify.com](https://app.netlify.com) → **Add new site** → **Import an existing project** → **GitHub** → choose **AgriConnect**.
+3. **Build settings** (important):
 
-   | Name | Value |
-   |------|--------|
-   | `VITE_API_URL` | `https://YOUR-BACKEND.onrender.com/api` |
-   | `VITE_SOCKET_URL` | `https://YOUR-BACKEND.onrender.com` |
+   | Setting | Value |
+   |---------|--------|
+   | Base directory | `frontend` |
+   | Build command | `npm run build` |
+   | Publish directory | `frontend/dist` |
 
-5. Deploy. Update Render `CLIENT_ORIGIN` to your Vercel URL if you change domains.
+   (Or leave defaults if `frontend/netlify.toml` is detected when base = `frontend`.)
+
+4. **Site configuration** → **Environment variables** → **Add a variable** (deploy context: **Production**):
+
+   | Key | Value |
+   |-----|--------|
+   | `VITE_API_URL` | `https://agriconnect-backend-uutq.onrender.com/api` |
+   | `VITE_SOCKET_URL` | `https://agriconnect-backend-uutq.onrender.com` |
+
+5. **Deploy site**. Copy your Netlify URL (e.g. `https://agriconnect-ai.netlify.app`).
+6. On **Render**, set `CLIENT_ORIGIN` to:
+
+   `http://localhost:5173,https://YOUR-NETLIFY-URL.netlify.app`
+
+   Save → Render redeploys. Without this, login/API calls fail with CORS errors.
+
+### 3b. Deploy frontend (Vercel) — optional
+
+1. [vercel.com](https://vercel.com) → import repo, **Root Directory**: `frontend`.
+2. Same `VITE_*` env vars as Netlify above.
+3. Add the Vercel URL to Render `CLIENT_ORIGIN` (comma-separated).
 
 ### 4. MongoDB Atlas
 
