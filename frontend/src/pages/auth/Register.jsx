@@ -19,23 +19,38 @@ const Register = () => {
   const { register, handleSubmit } = useForm();
   const { register: registerUser } = useAuth();
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const onSubmit = async (values) => {
+    if (submitting) return;
     setError('');
+    setInfo('');
+    setSubmitting(true);
     try {
       const data = await registerUser(values);
+      if (data.message) {
+        setInfo(data.message);
+      }
       navigate(getDashboardPath(normalizeRole(data.user.role)));
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message;
       if (status === 409) {
-        setError(msg || 'This email is already registered. Please log in instead.');
+        setError(
+          msg ||
+            'This email is already registered with a different password. Use Login or try another email.'
+        );
       } else if (!err?.response) {
-        setError('Cannot reach server. Check your connection or try again in a minute (Render may be waking up).');
+        setError(
+          'Cannot reach server or registration may have completed. Try logging in with the same email and password.'
+        );
       } else {
         setError(msg || 'Unable to register');
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -66,9 +81,17 @@ const Register = () => {
               ))}
             </select>
           </label>
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <Button type="submit" className="w-full">
-            Create account
+          {info && <p className="text-sm text-brand-green">{info}</p>}
+          {error && (
+            <div className="space-y-2">
+              <p className="text-sm text-red-500">{error}</p>
+              <Link to="/login" className="text-sm font-semibold text-brand-green">
+                Go to Login →
+              </Link>
+            </div>
+          )}
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? 'Creating account...' : 'Create account'}
           </Button>
         </form>
         <p className="text-sm text-slate-500">

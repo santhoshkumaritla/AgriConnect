@@ -26,6 +26,18 @@ const createRefreshToken = async (user) => {
   return refreshToken;
 };
 
+const issueAuthResponse = async (user, res, status, message) => {
+  const accessToken = signAccessToken(user);
+  const refreshToken = await createRefreshToken(user);
+  const payload = {
+    user: sanitizeUser(user),
+    accessToken,
+    refreshToken,
+  };
+  if (message) payload.message = message;
+  return res.status(status).json(payload);
+};
+
 const register = async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
@@ -38,36 +50,62 @@ const register = async (req, res, next) => {
     if (role && !Object.values(ROLES).includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
-    const existing = await User.findOne({ email });
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = await User.findOne({ email: normalizedEmail });
+
     if (existing) {
-      return res.status(409).json({ message: 'Email already registered' });
+      const samePassword = await bcrypt.compare(password, existing.passwordHash);
+      if (samePassword) {
+        return issueAuthResponse(
+          existing,
+          res,
+          200,
+          'Account already exists. You have been signed in.'
+        );
+      }
+      return res.status(409).json({
+        message: 'Email already registered. Please log in or use a different email.',
+      });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const emailVerificationToken = generateRandomToken();
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: normalizedEmail,
       passwordHash,
       role: role || ROLES.CONSUMER,
       emailVerificationToken,
     });
 
-    await sendEmail({
-      to: email,
-      subject: 'Verify your AgriConnect AI account',
-      html: `<p>Your verification token: <strong>${emailVerificationToken}</strong></p>`,
-    });
+    try {
+      await sendEmail({
+        to: normalizedEmail,
+        subject: 'Verify your AgriConnect AI account',
+        html: `<p>Your verification token: <strong>${emailVerificationToken}</strong></p>`,
+      });
+    } catch (emailErr) {
+      console.error('Verification email failed (registration still succeeded):', emailErr.message);
+    }
 
-    const accessToken = signAccessToken(user);
-    const refreshToken = await createRefreshToken(user);
-
-    return res.status(201).json({
-      user: sanitizeUser(user),
-      accessToken,
-      refreshToken,
-    });
+    return issueAuthResponse(user, res, 201);
   } catch (error) {
+    if (error.code === 11000) {
+      const normalizedEmail = req.body.email?.trim().toLowerCase();
+      const existing = normalizedEmail ? await User.findOne({ email: normalizedEmail }) : null;
+      if (existing && (await bcrypt.compare(req.body.password, existing.passwordHash))) {
+        return issueAuthResponse(
+          existing,
+          res,
+          200,
+          'Account already exists. You have been signed in.'
+        );
+      }
+      return res.status(409).json({
+        message: 'Email already registered. Please log in.',
+      });
+    }
     return next(error);
   }
 };
@@ -78,7 +116,7 @@ const login = async (req, res, next) => {
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -87,10 +125,7 @@ const login = async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const accessToken = signAccessToken(user);
-    const refreshToken = await createRefreshToken(user);
-
-    return res.json({ user: sanitizeUser(user), accessToken, refreshToken });
+    return issueAuthResponse(user, res, 200);
   } catch (error) {
     return next(error);
   }
