@@ -17,11 +17,15 @@ const roleOptions = [
 
 const Register = () => {
   const { register, handleSubmit } = useForm();
-  const { register: registerUser } = useAuth();
+  const { register: registerUser, login: loginUser } = useAuth();
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  const goToDashboard = (data) => {
+    navigate(getDashboardPath(normalizeRole(data.user.role)));
+  };
 
   const onSubmit = async (values) => {
     if (submitting) return;
@@ -30,22 +34,39 @@ const Register = () => {
     setSubmitting(true);
     try {
       const data = await registerUser(values);
-      if (data.message) {
-        setInfo(data.message);
-      }
-      navigate(getDashboardPath(normalizeRole(data.user.role)));
+      if (data.message) setInfo(data.message);
+      goToDashboard(data);
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message;
+
       if (status === 409) {
-        setError(
-          msg ||
-            'This email is already registered with a different password. Use Login or try another email.'
-        );
+        try {
+          setInfo('Account exists — signing you in…');
+          const data = await loginUser({
+            email: values.email,
+            password: values.password,
+          });
+          goToDashboard(data);
+          return;
+        } catch {
+          setError(msg || 'Email already registered. Please log in.');
+        }
       } else if (!err?.response) {
-        setError(
-          'Cannot reach server or registration may have completed. Try logging in with the same email and password.'
-        );
+        try {
+          setInfo('Checking if your account was created…');
+          const data = await loginUser({
+            email: values.email,
+            password: values.password,
+          });
+          setInfo('Account ready — welcome!');
+          goToDashboard(data);
+          return;
+        } catch {
+          setError(
+            'Server is slow or still updating. Wait 30 seconds, then use Login with the same email and password.'
+          );
+        }
       } else {
         setError(msg || 'Unable to register');
       }
@@ -91,7 +112,7 @@ const Register = () => {
             </div>
           )}
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Creating account...' : 'Create account'}
+            {submitting ? 'Please wait…' : 'Create account'}
           </Button>
         </form>
         <p className="text-sm text-slate-500">

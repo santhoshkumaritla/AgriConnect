@@ -24,7 +24,9 @@ const Login = () => {
       navigate(getDashboardPath(normalizeRole(data.user.role)));
     } catch (err) {
       if (!err?.response) {
-        setError('Cannot reach server. Wait a moment and try again (Render free tier may be starting).');
+        setError(
+          'Cannot reach server. Open https://agriconnect-backend-uutq.onrender.com/api/health in a new tab, wait until it says ok, then try again.'
+        );
       } else {
         setError(err?.response?.data?.message || 'Unable to login');
       }
