@@ -18,7 +18,10 @@ const DeliveryDashboard = () => {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Delivery Dashboard" subtitle="Manage assigned deliveries and earnings." />
+      <PageHeader
+        title="Delivery Dashboard"
+        subtitle="Claim packed orders from farmers, then deliver to customers."
+      />
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Active deliveries" value={active} />
         <StatCard label="Completed" value={completed} />

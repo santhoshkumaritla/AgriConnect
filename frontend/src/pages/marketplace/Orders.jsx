@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getApiError } from '../../utils/apiError';
 
 const STATUS_STEPS = ['pending', 'accepted', 'packed', 'out_for_delivery', 'delivered'];
+const FARMER_STEPS = ['pending', 'accepted', 'packed'];
 
 const OrderTimeline = ({ status }) => {
   const idx = STATUS_STEPS.indexOf(status);
@@ -52,6 +53,7 @@ const Orders = () => {
         },
       }));
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['deliveries'] });
     },
     onError: (err, { id }) => {
       setOrderFeedback((s) => ({
@@ -61,9 +63,10 @@ const Orders = () => {
     },
   });
 
-  const nextStatus = (current) => {
-    const i = STATUS_STEPS.indexOf(current);
-    return i >= 0 && i < STATUS_STEPS.length - 1 ? STATUS_STEPS[i + 1] : null;
+  const nextStatus = (current, role) => {
+    const steps = role === 'farmer' ? FARMER_STEPS : STATUS_STEPS;
+    const i = steps.indexOf(current);
+    return i >= 0 && i < steps.length - 1 ? steps[i + 1] : null;
   };
 
   if (error) {
@@ -105,13 +108,18 @@ const Orders = () => {
                 <p className="text-xs text-slate-500">Payment: {order.payment.transactionId}</p>
               )}
               <OrderTimeline status={order.status} />
-              {user?.role === 'farmer' && nextStatus(order.status) && order.status !== 'cancelled' && (
+              {user?.role === 'farmer' && nextStatus(order.status, 'farmer') && order.status !== 'cancelled' && (
                 <Button
                   variant="outline"
-                  onClick={() => updateMutation.mutate({ id: order._id, status: nextStatus(order.status) })}
+                  onClick={() => updateMutation.mutate({ id: order._id, status: nextStatus(order.status, 'farmer') })}
                 >
-                  Mark as {nextStatus(order.status).replace(/_/g, ' ')}
+                  Mark as {nextStatus(order.status, 'farmer').replace(/_/g, ' ')}
                 </Button>
+              )}
+              {user?.role === 'farmer' && order.status === 'packed' && (
+                <p className="text-sm text-brand-green">
+                  Sent to delivery partners — they will claim and deliver this order.
+                </p>
               )}
               {user?.role === 'consumer' && order.status === 'pending' && (
                 <Button

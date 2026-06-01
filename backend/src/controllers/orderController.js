@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const Delivery = require('../models/Delivery');
 const { ORDER_STATUS } = require('../utils/constants');
 const { createNotification } = require('../services/notifyService');
+const { createDeliveryForOrder } = require('./deliveryController');
 
 const canAccessOrder = (order, user) => {
   const role = user.role;
@@ -150,6 +151,10 @@ const updateOrderStatus = async (req, res, next) => {
 
     order.status = status;
     await order.save();
+
+    if (isFarmer && status === 'packed') {
+      await createDeliveryForOrder(order);
+    }
 
     const notifyId = isFarmer ? order.consumerId : order.farmerId;
     await createNotification(
