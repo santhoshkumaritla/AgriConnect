@@ -18,19 +18,12 @@ const deliveryRoutes = require('./routes/deliveryRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const { notFound, errorHandler } = require('./middleware/error');
+const { corsOptions } = require('./utils/corsConfig');
 
 const app = express();
 
-const corsOrigins = process.env.CLIENT_ORIGIN
-  ? process.env.CLIENT_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
-  : '*';
-
-app.use(
-  cors({
-    origin: corsOrigins,
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
